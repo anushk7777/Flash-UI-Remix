@@ -41,7 +41,7 @@ function App() {
   
   const [drawerState, setDrawerState] = useState<{
       isOpen: boolean;
-      mode: 'code' | 'variations' | null;
+      mode: 'code' | 'variations' | 'mcp' | null;
       title: string;
       data: any; 
   }>({ isOpen: false, mode: null, title: '', data: null });
@@ -458,9 +458,40 @@ Return ONLY RAW HTML. No markdown fences.
 
   return (
     <>
-        <a href="https://github.com/anushk7777" target="_blank" rel="noreferrer" className={`creator-credit ${hasStarted ? 'hide-on-mobile' : ''}`}>
-            created by Anushk
-        </a>
+        <div className={`top-right-actions ${hasStarted ? 'hide-on-mobile' : ''}`}>
+            <button 
+                className="mcp-button"
+                onClick={() => setDrawerState({ isOpen: true, mode: 'mcp', title: 'Use as MCP Server', data: null })}
+            >
+                <CodeIcon /> Use as MCP
+            </button>
+            <a href="https://github.com/anushk7777" target="_blank" rel="noreferrer" className="creator-credit">
+                created by Anushk
+            </a>
+        </div>
+
+        <div className="top-left-actions">
+            {focusedArtifactIndex !== null && (
+                <button className="back-button" onClick={() => setFocusedArtifactIndex(null)}>
+                    <ArrowLeftIcon /> Back to Grid
+                </button>
+            )}
+            <div className={`global-mode-selector ${focusedArtifactIndex !== null ? 'hidden' : ''}`}>
+                <span className="mode-label">Mode:</span>
+                <div className="type-selector-container">
+                    <select 
+                        className="component-type-select"
+                        value={componentType}
+                        onChange={(e) => setComponentType(e.target.value)}
+                        disabled={isLoading}
+                    >
+                        {COMPONENT_TYPES.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+        </div>
 
         <SideDrawer 
             isOpen={drawerState.isOpen} 
@@ -488,6 +519,33 @@ Return ONLY RAW HTML. No markdown fences.
                              <div className="sexy-label">{v.name}</div>
                          </div>
                     ))}
+                </div>
+            )}
+
+            {drawerState.mode === 'mcp' && (
+                <div className="mcp-instructions">
+                    <p>You can use this application as a Model Context Protocol (MCP) server to generate UI components directly from your favorite AI agents (like Claude Desktop or Cursor).</p>
+                    
+                    <h3>Connection Details</h3>
+                    <div className="mcp-detail-box">
+                        <strong>SSE Endpoint:</strong> <code>{window.location.origin}/mcp/sse</code><br/>
+                        <strong>Message Endpoint:</strong> <code>{window.location.origin}/mcp/messages</code>
+                    </div>
+
+                    <h3>Claude Desktop Configuration</h3>
+                    <p>Add the following to your <code>claude_desktop_config.json</code>:</p>
+                    <pre className="code-block"><code>{JSON.stringify({
+  "mcpServers": {
+    "flash-ui": {
+      "command": "node",
+      "args": [
+        "-e",
+        `const EventSource = require('eventsource');\n// Claude Desktop currently supports stdio natively.\n// To use this SSE server, you can use an SSE-to-stdio bridge or a compatible client.\nconsole.log('Connect to SSE: ${window.location.origin}/mcp/sse');`
+      ]
+    }
+  }
+}, null, 2)}</code></pre>
+                    <p className="mcp-note"><em>Note: Claude Desktop natively uses stdio. To connect to an SSE server, you may need an SSE-to-stdio bridge script, or use an editor like Cursor that supports SSE MCP servers directly by providing the SSE Endpoint URL.</em></p>
                 </div>
             )}
         </SideDrawer>
@@ -568,26 +626,13 @@ Return ONLY RAW HTML. No markdown fences.
             </div>
 
             <div className="floating-input-container">
-                <div className="input-group-vertical">
-                    <div className="type-selector-container">
-                        <select 
-                            className="component-type-select"
-                            value={componentType}
-                            onChange={(e) => setComponentType(e.target.value)}
-                            disabled={isLoading}
-                        >
-                            {COMPONENT_TYPES.map(type => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className={`input-wrapper ${isLoading ? 'loading' : ''}`}>
-                        {(!inputValue && !isLoading) && (
-                            <div className="animated-placeholder" key={placeholderIndex}>
-                                <span className="placeholder-text">{placeholders[placeholderIndex]}</span>
-                                <span className="tab-hint">Tab</span>
-                            </div>
-                        )}
+                <div className={`input-wrapper ${isLoading ? 'loading' : ''}`}>
+                    {(!inputValue && !isLoading) && (
+                        <div className="animated-placeholder" key={placeholderIndex}>
+                            <span className="placeholder-text">{placeholders[placeholderIndex]}</span>
+                            <span className="tab-hint">Tab</span>
+                        </div>
+                    )}
                         {!isLoading ? (
                         <input 
                             ref={inputRef}
@@ -609,8 +654,7 @@ Return ONLY RAW HTML. No markdown fences.
                 </div>
             </div>
         </div>
-    </div>
-</>
+    </>
   );
 }
 

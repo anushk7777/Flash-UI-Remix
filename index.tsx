@@ -194,6 +194,14 @@ Required JSON Output Format (stream ONE object per line):
         }
     } catch (e: any) {
         console.error("Error generating variations:", e);
+        setComponentVariations([{
+            name: 'Error',
+            html: `<div style="color: #ff6b6b; padding: 20px; font-family: sans-serif; background: rgba(255,0,0,0.1); border-radius: 8px; margin: 20px;">
+                    <h3 style="margin-top:0;">Generation Failed</h3>
+                    <p>${e.message || 'Unknown error occurred'}</p>
+                    <p style="font-size: 0.9em; opacity: 0.8;">If you are deployed on Vercel, make sure you have added <strong>GEMINI_API_KEY</strong> to your Vercel Environment Variables and redeployed.</p>
+                   </div>`
+        }]);
     } finally {
         setIsLoading(false);
     }
@@ -375,8 +383,23 @@ Return ONLY RAW HTML. No markdown fences.
 
         await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Fatal error in generation process", e);
+        setSessions(prev => prev.map(sess => 
+            sess.id === sessionId ? {
+                ...sess,
+                artifacts: sess.artifacts.map(art => ({
+                    ...art,
+                    styleName: 'Error',
+                    html: `<div style="color: #ff6b6b; padding: 20px; font-family: sans-serif; background: rgba(255,0,0,0.1); border-radius: 8px; margin: 20px;">
+                            <h3 style="margin-top:0;">Generation Failed</h3>
+                            <p>${e.message || 'Unknown error occurred'}</p>
+                            <p style="font-size: 0.9em; opacity: 0.8;">If you are deployed on Vercel, make sure you have added <strong>GEMINI_API_KEY</strong> to your Vercel Environment Variables and redeployed.</p>
+                           </div>`,
+                    status: 'error'
+                }))
+            } : sess
+        ));
     } finally {
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), 100);
